@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Form</title>
+</head>
+<body>
+    <h2>Podaj swój login:</h2>
+    <form method="post">
+        <input type="text" name="username" placeholder="Login" />
+        <button type="submit">Wyślij</button>
+    </form>
+<hr />
+{% if error %}
+    <h3>{{ error }}</h3>
+{% endif %}
+{% if username %}
+    <h3>Witaj, {{ username }}</h3>
+{% endif %}
+</body>
+</html>
