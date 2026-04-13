@@ -1,6 +1,13 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, g
+import sqlite3
 
 app = Flask(__name__)
+DATABASE = 'todo.db'
+
+def get_db():
+    if 'db' not in g:
+        conn = sqlite3.connect(DATABASE)
+        conn.row_factory = sqlite3.Row
 
 @app.route('/')
 def index():
