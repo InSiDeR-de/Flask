@@ -7,9 +7,9 @@
 </head>
 <body>
     <h1>ToDo list</h1>
-    <a href="http://127.0.0.1:5000">Home</a>
-    <a href="http://127.0.0.1:5000/tasks">Tasks</a>
-    <a href="http://127.0.0.1:5000/ping">Ping</a>
+    <a href="{{ url_for('index') }}">Home</a>
+    <a href="{{ url_for('ping') }}">Ping</a>
+    <a href="{{ url_for('list') }}">List tasks</a>
     <header>
     {% block content %}
     <p>Witaj w aplikacji ToDo List</p>

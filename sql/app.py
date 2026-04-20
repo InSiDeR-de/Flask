@@ -1,4 +1,4 @@
-from flask import Flask, render_template, g
+from flask import Flask, render_template, g, redirect, url_for, request
 import sqlite3
 
 app = Flask(__name__)
@@ -65,6 +65,28 @@ def ping():
         db = get_db()
         db.execute("SELECT 1").fetchone()
         return render_template('ping.html')
+
+@app.route('/list')
+def list():
+    db = get_db()
+    tasks = db.execute("SELECT id, title, done, created_at FROM tasks ORDER BY created_at DESC").fetchall()
+    return render_template('list.html', tasks=tasks)
+
+@app.route('/add_task', methods=['GET', 'POST'])
+def add_task():
+    if request.method == 'POST':
+        title = request.form.get('title').strip()
+        if len(title) < 4:
+            return render_template('add_task.html', error=f'Nie można dodać zadania o nazwie krótszej niż 4 znaki')
+        db = get_db()
+        existingtask = db.execute("SELECT id FROM tasks WHERE title LIKE ?", [title]).fetchone()
+        if existingtask:
+            return render_template('add_task.html', error=f'Zadanie o tej samej nazwie już istnieje')
+        db.execute("INSERT INTO tasks (title, done) VALUES (?,?)", [title,0])
+        db.commit()
+        return redirect(url_for('list'))
+    return render_template('add_task.html')
+
 
 if __name__ == '__main__':
     app.run(debug=True)
