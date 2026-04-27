@@ -1,7 +1,9 @@
-from flask import Flask, render_template, g, redirect, url_for, request
+from flask import Flask, flash, render_template, g, redirect, url_for, request
+import secrets
 import sqlite3
 
 app = Flask(__name__)
+app.config['SECRET_KEY'] = secrets.token_urlsafe(16)
 DATABASE = 'todo.db'
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS tasks(
@@ -77,16 +79,57 @@ def add_task():
     if request.method == 'POST':
         title = request.form.get('title').strip()
         if len(title) < 4:
-            return render_template('add_task.html', error=f'Nie można dodać zadania o nazwie krótszej niż 4 znaki')
+            return render_template('add_task.html', error=flash(f'Nie można dodać zadania o nazwie krótszej niż 4 znaki'))
         db = get_db()
         existingtask = db.execute("SELECT id FROM tasks WHERE title LIKE ?", [title]).fetchone()
         if existingtask:
-            return render_template('add_task.html', error=f'Zadanie o tej samej nazwie już istnieje')
+            return render_template('add_task.html', error=flash(f'Zadanie o tej samej nazwie już istnieje'))
         db.execute("INSERT INTO tasks (title, done) VALUES (?,?)", [title,0])
         db.commit()
         return redirect(url_for('list'))
     return render_template('add_task.html')
 
+@app.route('/tasks/<int:task_id>/toggle', methods=['POST'])
+def toggle_task(task_id, is_task_view=False):
+    db = get_db()
+    task = db.execute("SELECT id, done FROM tasks WHERE id = ?", [task_id]).fetchone()
+    if task:
+        new_status = 0 if task['done'] else 1
+        db.execute("UPDATE tasks SET done = ? WHERE id = ?", [new_status, task_id])
+        db.commit()
+        flash(f'Zadanie o ID {task_id} zostało oznaczone jako {"zrobione" if new_status else "niezrobione"}', 'success')
+        is_task_view = request.form.get('is_task_view') == 'true'
+        if is_task_view:
+            return redirect(url_for('task', task_id=task_id))
+    return redirect(url_for('list'))
+
+@app.route('/tasks/<int:task_id>/delete', methods=['POST'])
+def delete_task(task_id):
+    db = get_db()
+    db.execute("DELETE FROM tasks WHERE id = ?", [task_id])
+    db.commit()
+    flash=(f'Zadanie o ID {task_id} zostało usunięte.', 'success')
+    return redirect(url_for('list'))
+
+@app.route('/tasks/<int:task_id>')
+def task(task_id):
+    db = get_db()
+    task = db.execute("SELECT id, title, done, created_at FROM tasks WHERE id = ?", [task_id]).fetchone()
+    if task is None:
+        return redirect(url_for('list'))
+    return render_template('task.html', task=task)
+
+@app.route('/tasks/<int:task_id>/change_tittle', methods=['POST'])
+def change_title(task_id):
+    db = get_db()
+    new_title = request.form.get('title').strip()
+    if len(new_title) < 4:
+        flash(f'Nowa nazwa zadania musi mieć co najmniej 4 znaki.', 'error')
+    else:
+        db.execute("UPDATE tasks SET title = ? WHERE id = ?", [new_title, task_id])
+        db.commit()
+        flash(f'Zmieniono nazwę zadania na: {new_title}', 'success')
+    return redirect(url_for('task', task_id=task_id))
 
 if __name__ == '__main__':
     app.run(debug=True)

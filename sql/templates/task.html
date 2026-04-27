@@ -1,0 +1,26 @@
+{% extends "index.html" %}
+
+{% block title %}zadanie {{ task['title'] }}{% endblock %}
+
+{% block content %}
+<h2>{{ task['title'] }}</h2>
+    Status :{% if task["done"] == 1 %}
+        ✔
+    {% else %}
+        ✘
+    {% endif %}
+            <form action="{{ url_for('toggle_task', task_id=task['id']) }}" method="post" style="display:inline;" >
+                <input type="hidden" name="is_task_view" value="true">
+                <button type="submit">Zmień status</button>
+            </form>
+            <form action="{{ url_for('delete_task', task_id=task['id'])}}" method="post" style="display:inline;">
+                <input type="hidden" name="is_task_view" value="true">
+                <button type="submit">Usuń</button>
+            </form><br><br>
+            <form action="{{ url_for('change_title', task_id=task['id']) }}" method="post" style="display:inline;">
+                <input type="text" name="new_title" placeholder="Nowy tytuł" required>
+                <button type="submit">Zmień tytuł</button>
+            </form>
+            <br><br>
+            <small>(ID: {{ task["created_at"] }})</small>
+{% endblock %}

@@ -12,11 +12,24 @@
             {% for task in tasks %}
                 <li>
                     {% if task["done"] == 1 %}
-                        ✔ {{ task["title"] }}
+                        ✔
                     {% else %}
-                        ✘ {{ task["title"] }}
+                        ✘
                     {% endif %}
+                    <a href="{{ url_for('task', task_id=task['id']) }}">{{ task['title'] }}</a>
                     <small>(ID: {{ task["created_at"] }})</small>
+                    <form action="{{ url_for('toggle_task', task_id=task['id'], is_task_view=true) }}" method="post" style="display:inline;">
+                        <input type="hidden" name="is_task_view" value="true">
+                        <button type="submit">Zmień status</button>
+                    </form>
+                    <form action="{{ url_for('delete_task', task_id=task['id'], is_task_view=true) }}" method="post" style="display:inline;">
+                        <input type="hidden" name="is_task_view" value="true">
+                        <button type="submit">Usuń</button>
+                    </form>
+                    <form action="{{ url_for('change_title', task_id=task['id']) }}" method="post" style="display:inline;">
+                        <input type="text" name="new_title" placeholder="Nowy tytuł" required>
+                        <button type="submit">Zmień tytuł</button>
+                    </form>
                 </li>
             {% endfor %}
         </ul>
