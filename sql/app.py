@@ -1,4 +1,4 @@
-from flask import Flask, flash, render_template, g, redirect, url_for, request
+from flask import Flask, flash, render_template, g, redirect, url_for, request, jsonify, abort
 import secrets
 import sqlite3
 
@@ -131,5 +131,39 @@ def change_title(task_id):
         flash(f'Zmieniono nazwę zadania na: {new_title}', 'success')
     return redirect(url_for('task', task_id=task_id))
 
+@app.route("/api/tasks", methods=['GET'])
+def api_tasks():
+    db = get_db()
+    rows = db.execute("SELECT id, title, done, created_at FROM tasks ORDER BY created_at DESC").fetchall()
+    return jsonify([dict(row) for row in rows])
+
+@app.route("/api/tasks/<int:task_id>", methods=['GET'])
+def api_task(task_id):
+    db = get_db()
+    row = db.execute("SELECT id, title, done, created_at FROM tasks WHERE id = ?", [task_id]).fetchone()
+    if row is None:
+        abort(404, description=f"Task with ID {task_id} not found.")
+    return jsonify(dict(row))
+
+@app.route("/api/tasks", methods=['POST'])
+def api_tasks_add():
+    data = request.get_json(silent=True)
+    if not data or "title" not in data:
+        abort(400, description="Not found 'title' in request body.")
+
+    title = data['title'].strip()
+    if len(title) < 4:
+        abort(400, description="Task title must be at least 4 characters long.")
+    db = get_db()
+    existingtask = db.execute("SELECT id FROM tasks WHERE title LIKE ?", [title]).fetchone()
+    if existingtask:
+        abort(400, description="Task with the same title already exists.")
+
+    done = 1 if data.get('done') else 0
+    cur = db.execute("INSERT INTO tasks (title, done) VALUES (?, ?)", [title, done])
+    db.commit()
+    task_id = cur.lastrowid
+    new_task = db.execute("SELECT id, title, done, created_at FROM tasks WHERE id = ?", [task_id]).fetchone()
+    return jsonify(dict(new_task)), 201
 if __name__ == '__main__':
     app.run(debug=True)
